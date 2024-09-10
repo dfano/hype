@@ -2,11 +2,8 @@ import streamlit as st
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
-import requests
-import json
 from elevenlabs import VoiceSettings
 from elevenlabs.client import ElevenLabs
-import uuid
 import base64
 
 # Load environment variables
