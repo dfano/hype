@@ -7,6 +7,7 @@ import json
 from elevenlabs import VoiceSettings
 from elevenlabs.client import ElevenLabs
 import uuid
+import base64
 
 # Load environment variables
 load_dotenv()
@@ -47,7 +48,7 @@ def text_to_speech(text: str) -> bytes:
         response = client.text_to_speech.convert(
             voice_id="o9HlFuTtE0sBJwrDEnVH",  # Adam pre-made voice
             optimize_streaming_latency="0",
-            output_format="mp3_44100_128",
+            output_format="mp3_44100_128",  # Ensure MP3 format
             text=text,
             model_id="eleven_turbo_v2",
             voice_settings=VoiceSettings(
@@ -86,5 +87,12 @@ if st.button("Generate Hype Pitch") and resume_text and job_description:
     audio = text_to_speech(hype_pitch)
     if audio:
         st.audio(audio, format="audio/mp3")
+        
+        # Add download button for audio
+        b64_audio = base64.b64encode(audio).decode()
+        href = f'<a href="data:audio/mp3;base64,{b64_audio}" download="hype_pitch.mp3">Download Audio</a>'
+        st.markdown(href, unsafe_allow_html=True)
+        
+        st.markdown("If audio doesn't play automatically, use the download link above.")
     else:
         st.error("Failed to generate audio")
