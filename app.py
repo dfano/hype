@@ -75,28 +75,37 @@ def get_audio_html(audio_data):
 
 st.title("Resume Hype Pitch Generator")
 
+# Create placeholders for the generated content
+hype_pitch_placeholder = st.empty()
+audio_player_placeholder = st.empty()
+
+# Input fields
 resume_text = st.text_area("Paste your resume text here")
 job_description = st.text_area("Paste the job description here")
 
 if st.button("Generate Hype Pitch") and resume_text and job_description:
     hype_pitch = generate_hype_pitch(resume_text, job_description)
-    st.subheader("Your Hype Pitch:")
-    st.write(hype_pitch)
+    
+    # Display the hype pitch in the placeholder
+    with hype_pitch_placeholder.container():
+        st.subheader("Your Hype Pitch:")
+        st.write(hype_pitch)
 
     audio_data = text_to_speech(hype_pitch)
     if audio_data:
         # Add a small delay
         time.sleep(1)
         
-        # Use custom HTML5 audio player
-        st.markdown(get_audio_html(audio_data), unsafe_allow_html=True)
-        
-        # Provide download button
-        st.download_button(
-            label="Download Audio",
-            data=audio_data,
-            file_name=f"hype_pitch_{int(time.time())}.mp3",
-            mime="audio/mpeg"
-        )
+        # Display the audio player in the placeholder
+        with audio_player_placeholder.container():
+            st.markdown(get_audio_html(audio_data), unsafe_allow_html=True)
+            
+            # Provide download button
+            st.download_button(
+                label="Download Audio",
+                data=audio_data,
+                file_name=f"hype_pitch_{int(time.time())}.mp3",
+                mime="audio/mpeg"
+            )
     else:
-        st.error("Failed to generate audio")
+        audio_player_placeholder.error("Failed to generate audio")
