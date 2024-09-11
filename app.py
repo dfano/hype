@@ -5,6 +5,8 @@ import os
 from elevenlabs import VoiceSettings
 from elevenlabs.client import ElevenLabs
 import base64
+import time
+import tempfile
 
 # Load environment variables
 load_dotenv()
@@ -12,7 +14,12 @@ load_dotenv()
 # Initialize the OpenAI client
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-XI_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+# Initialize the ElevenLabs client
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+if not ELEVENLABS_API_KEY:
+    raise ValueError("ELEVENLABS_API_KEY environment variable not set")
+client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+
 VOICE_ID = "o9HlFuTtE0sBJwrDEnVH"  # Josh voice ID
 
 def generate_hype_pitch(resume_text, job_description):
@@ -43,9 +50,9 @@ def generate_hype_pitch(resume_text, job_description):
 def text_to_speech(text: str) -> bytes:
     try:
         response = client.text_to_speech.convert(
-            voice_id="o9HlFuTtE0sBJwrDEnVH",  # Adam pre-made voice
+            voice_id=VOICE_ID,
             optimize_streaming_latency="0",
-            output_format="mp3_44100_128",  # Ensure MP3 format
+            output_format="mp3_44100_128",
             text=text,
             model_id="eleven_turbo_v2",
             voice_settings=VoiceSettings(
@@ -56,20 +63,15 @@ def text_to_speech(text: str) -> bytes:
             ),
         )
         
-        audio_data = b"".join(chunk for chunk in response if chunk)
-        return audio_data
+        return b"".join(chunk for chunk in response if chunk)
     except Exception as e:
         st.error(f"Error generating audio: {str(e)}")
         return None
 
-# Load environment variables
-load_dotenv()
-
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-if not ELEVENLABS_API_KEY:
-    raise ValueError("ELEVENLABS_API_KEY environment variable not set")
-
-client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+def get_audio_html(audio_data):
+    audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+    audio_tag = f'<audio controls autoplay><source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3"></audio>'
+    return audio_tag
 
 st.title("Resume Hype Pitch Generator")
 
@@ -81,15 +83,20 @@ if st.button("Generate Hype Pitch") and resume_text and job_description:
     st.subheader("Your Hype Pitch:")
     st.write(hype_pitch)
 
-    audio = text_to_speech(hype_pitch)
-    if audio:
-        st.audio(audio, format="audio/mp3")
+    audio_data = text_to_speech(hype_pitch)
+    if audio_data:
+        # Add a small delay
+        time.sleep(1)
         
-        # Add download button for audio
-        b64_audio = base64.b64encode(audio).decode()
-        href = f'<a href="data:audio/mp3;base64,{b64_audio}" download="hype_pitch.mp3">Download Audio</a>'
-        st.markdown(href, unsafe_allow_html=True)
+        # Use custom HTML5 audio player
+        st.markdown(get_audio_html(audio_data), unsafe_allow_html=True)
         
-        st.markdown("If audio doesn't play automatically, use the download link above.")
+        # Provide download button
+        st.download_button(
+            label="Download Audio",
+            data=audio_data,
+            file_name=f"hype_pitch_{int(time.time())}.mp3",
+            mime="audio/mpeg"
+        )
     else:
         st.error("Failed to generate audio")

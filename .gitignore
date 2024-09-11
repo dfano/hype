@@ -40,3 +40,5 @@ venv/
 .env
 .cusrorrules
 .cursorrules
+
+audio_files/
